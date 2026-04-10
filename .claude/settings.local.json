@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.cricwindow.com)",
+      "WebFetch(domain:www.iplt20.com)",
+      "Bash(pip install:*)",
+      "WebSearch",
+      "WebFetch(domain:www.espncricinfo.com)",
+      "WebFetch(domain:www.bbc.co.uk)",
+      "Bash(python:*)"
+    ]
+  }
+}
