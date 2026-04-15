@@ -8,7 +8,9 @@
       "WebFetch(domain:www.espncricinfo.com)",
       "WebFetch(domain:www.bbc.co.uk)",
       "Bash(python:*)",
-      "Bash(curl -s http://localhost:5001/register)"
+      "Bash(curl -s http://localhost:5001/register)",
+      "Bash(where git:*)",
+      "Skill(create-spec)"
     ]
   }
 }
