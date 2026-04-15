@@ -17,9 +17,9 @@ def landing():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    # If already logged in, redirect to profile
+    # If already logged in, redirect to landing
     if session.get("user_id"):
-        return redirect(url_for("profile"))
+        return redirect(url_for("landing"))
 
     if request.method == "POST":
         # Get form data
@@ -70,9 +70,9 @@ def register():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    # If already logged in, redirect to profile
+    # If already logged in, redirect to landing
     if session.get("user_id"):
-        return redirect(url_for("profile"))
+        return redirect(url_for("landing"))
 
     if request.method == "POST":
         # Get form data
