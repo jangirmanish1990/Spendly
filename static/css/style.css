@@ -654,3 +654,290 @@ a { color: inherit; text-decoration: none; }
     color: var(--ink-soft);
     line-height: 1.7;
 }
+
+/* ------------------------------------------------------------------ */
+/* Profile Page                                                        */
+/* ------------------------------------------------------------------ */
+
+.profile-container {
+    padding: 3rem 2rem;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.profile-card {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 2rem;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    font-weight: 600;
+    font-family: var(--font-body);
+    flex-shrink: 0;
+}
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.profile-name {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    color: var(--ink);
+    margin: 0;
+}
+
+.profile-email {
+    font-size: 0.95rem;
+    color: var(--ink-muted);
+    margin: 0;
+}
+
+.profile-member {
+    font-size: 0.85rem;
+    color: var(--ink-faint);
+    margin: 0;
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.stat-card {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+    font-weight: 500;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.stat-value.stat-category {
+    color: var(--accent);
+}
+
+/* Section Title */
+.section-title {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    color: var(--ink);
+    margin: 0 0 1.5rem 0;
+}
+
+/* Transaction Table */
+.transactions-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.transactions-table th {
+    text-align: left;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--ink-muted);
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.transactions-table td {
+    padding: 1rem;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.transactions-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.transactions-table tbody tr:hover {
+    background: var(--paper-warm);
+}
+
+.transactions-table .amount {
+    font-weight: 600;
+    color: var(--ink);
+    text-align: right;
+}
+
+/* Badges */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.badge-food {
+    background: var(--accent-2-light);
+    color: var(--accent-2);
+}
+
+.badge-transport {
+    background: var(--accent-light);
+    color: var(--accent);
+}
+
+.badge-entertainment {
+    background: #f3e8ff;
+    color: #7c3aed;
+}
+
+.badge-bills {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.badge-health {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.badge-shopping {
+    background: #fce7f3;
+    color: #db2777;
+}
+
+.badge-other {
+    background: #e5e7eb;
+    color: #4b5563;
+}
+
+/* Category Breakdown */
+.category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.category-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.category-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.category-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--ink-soft);
+}
+
+.category-amount {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.progress-track {
+    width: 100%;
+    height: 8px;
+    background: var(--border-soft);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.5s ease;
+}
+
+.progress-food {
+    background: #f5a623;
+}
+
+.progress-transport {
+    background: #4a90e2;
+}
+
+.progress-bills {
+    background: #9013fe;
+}
+
+.progress-entertainment {
+    background: #e74c3c;
+}
+
+.progress-health {
+    background: #10b981;
+}
+
+.progress-shopping {
+    background: #ec4899;
+}
+
+.progress-other {
+    background: #6b7280;
+}
+
+.category-percentage {
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+    text-align: right;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .transactions-table {
+        font-size: 0.85rem;
+    }
+
+    .transactions-table th,
+    .transactions-table td {
+        padding: 0.75rem 0.5rem;
+    }
+}
