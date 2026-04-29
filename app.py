@@ -145,6 +145,15 @@ def profile():
     conn = get_db()
     cursor = conn.cursor()
 
+    # Fetch user data
+    cursor.execute("SELECT id, name, email, created_at FROM users WHERE id = ?", (user_id,))
+    user_row = cursor.fetchone()
+    user = {
+        "name": user_row["name"],
+        "email": user_row["email"],
+        "member_since": user_row["created_at"][:10] if user_row else "Unknown"
+    }
+
     # Total spent
     cursor.execute("SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ?", (user_id,))
     total_spent = cursor.fetchone()[0]
@@ -215,7 +224,7 @@ def profile():
         "top_category": top_category
     }
 
-    return render_template("profile.html", stats=stats, transactions=transactions, categories=categories)
+    return render_template("profile.html", user=user, stats=stats, transactions=transactions, categories=categories)
 
 
 @app.route("/expenses/add")
