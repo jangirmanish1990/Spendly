@@ -136,7 +136,86 @@ def logout():
 
 @app.route("/profile")
 def profile():
-    return "Profile page — coming in Step 4"
+    # Require authentication
+    if not session.get("user_id"):
+        flash("Please log in to view your profile.", "error")
+        return redirect(url_for("login"))
+
+    user_id = session["user_id"]
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Total spent
+    cursor.execute("SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ?", (user_id,))
+    total_spent = cursor.fetchone()[0]
+
+    # Transaction count
+    cursor.execute("SELECT COUNT(*) FROM expenses WHERE user_id = ?", (user_id,))
+    transaction_count = cursor.fetchone()[0]
+
+    # Top category
+    cursor.execute("""
+        SELECT category, SUM(amount) as total
+        FROM expenses
+        WHERE user_id = ?
+        GROUP BY category
+        ORDER BY total DESC
+        LIMIT 1
+    """, (user_id,))
+    top_category_row = cursor.fetchone()
+    top_category = top_category_row["category"] if top_category_row else "N/A"
+
+    # Category breakdown with percentages
+    cursor.execute("""
+        SELECT category, SUM(amount) as amount
+        FROM expenses
+        WHERE user_id = ?
+        GROUP BY category
+        ORDER BY amount DESC
+    """, (user_id,))
+    category_rows = cursor.fetchall()
+
+    # Build categories list with percentages
+    categories = []
+    if total_spent > 0:
+        for row in category_rows:
+            percentage = round((row["amount"] / total_spent) * 100)
+            categories.append({
+                "name": row["category"],
+                "amount": row["amount"],
+                "percentage": percentage
+            })
+
+    # Fetch recent transactions
+    cursor.execute(
+        """SELECT id, date, description, category, amount
+           FROM expenses
+           WHERE user_id = ?
+           ORDER BY date DESC
+           LIMIT 5""",
+        (user_id,)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+
+    # Convert rows to list of dicts
+    transactions = [
+        {
+            "date": row["date"],
+            "description": row["description"],
+            "category": row["category"],
+            "amount": row["amount"]
+        }
+        for row in rows
+    ]
+
+    stats = {
+        "total_spent": total_spent,
+        "transaction_count": transaction_count,
+        "top_category": top_category
+    }
+
+    return render_template("profile.html", stats=stats, transactions=transactions, categories=categories)
 
 
 @app.route("/expenses/add")
