@@ -10,7 +10,14 @@
       "Bash(python:*)",
       "Bash(curl -s http://localhost:5001/register)",
       "Bash(where git:*)",
-      "Skill(create-spec)"
+      "Skill(create-spec)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git checkout *)",
+      "Bash(git merge *)",
+      "Bash(git stash *)",
+      "Bash(curl *)",
+      "Bash(git commit *)"
     ]
   }
 }
