@@ -35,31 +35,31 @@ document.addEventListener("DOMContentLoaded", function() {
     const dateFilterForm = document.querySelector('.date-filter-form');
 
     if (dateFilterForm) {
-        const startDateInput = dateFilterForm.querySelector('input[name="start_date"]');
-        const endDateInput = dateFilterForm.querySelector('input[name="end_date"]');
+        const dateFromInput = dateFilterForm.querySelector('input[name="date_from"]');
+        const dateToInput = dateFilterForm.querySelector('input[name="date_to"]');
 
         // Validate date range on change
         function validateDateRange() {
-            if (startDateInput.value && endDateInput.value) {
-                if (startDateInput.value > endDateInput.value) {
-                    endDateInput.setCustomValidity("End date must be after start date");
+            if (dateFromInput.value && dateToInput.value) {
+                if (dateFromInput.value > dateToInput.value) {
+                    dateToInput.setCustomValidity("End date must be after start date");
                 } else {
-                    endDateInput.setCustomValidity("");
+                    dateToInput.setCustomValidity("");
                 }
             } else {
-                endDateInput.setCustomValidity("");
+                dateToInput.setCustomValidity("");
             }
         }
 
-        startDateInput.addEventListener("change", validateDateRange);
-        endDateInput.addEventListener("change", validateDateRange);
+        dateFromInput.addEventListener("change", validateDateRange);
+        dateToInput.addEventListener("change", validateDateRange);
 
         // Prevent form submission if date range is invalid
         dateFilterForm.addEventListener("submit", function(e) {
-            if (startDateInput.value && endDateInput.value && startDateInput.value > endDateInput.value) {
+            if (dateFromInput.value && dateToInput.value && dateFromInput.value > dateToInput.value) {
                 e.preventDefault();
-                endDateInput.setCustomValidity("End date must be after start date");
-                endDateInput.reportValidity();
+                dateToInput.setCustomValidity("End date must be after start date");
+                dateToInput.reportValidity();
             }
         });
     }

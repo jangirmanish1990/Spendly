@@ -1,9 +1,12 @@
+import os
+from datetime import datetime, timedelta
+
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash
 from database.db import get_db, init_db, seed_db
 
 app = Flask(__name__)
-app.secret_key = "spendly-secret-key-change-in-production"
+app.secret_key = os.environ.get("SECRET_KEY", "spendly-secret-key-change-in-production")
 
 
 # ------------------------------------------------------------------ #
@@ -134,6 +137,136 @@ def logout():
     return redirect(url_for("landing"))
 
 
+def parse_date(value):
+    """Validate and return ISO date string or None if malformed."""
+    if not value or not value.strip():
+        return None
+    try:
+        datetime.strptime(value.strip(), "%Y-%m-%d")
+        return value.strip()
+    except ValueError:
+        return None
+
+
+def get_summary_stats(cursor, user_id, date_from=None, date_to=None):
+    """Fetch summary stats (total spent, transaction count, top category) with optional date filter."""
+    # Build date filter clause
+    date_clause = ""
+    params = [user_id]
+    if date_from and date_to:
+        date_clause = "AND date >= ? AND date <= ?"
+        params = [user_id, date_from, date_to]
+    elif date_from:
+        date_clause = "AND date >= ?"
+        params = [user_id, date_from]
+    elif date_to:
+        date_clause = "AND date <= ?"
+        params = [user_id, date_to]
+
+    # Total spent
+    cursor.execute(f"SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? {date_clause}", params)
+    total_spent = cursor.fetchone()[0]
+
+    # Transaction count
+    cursor.execute(f"SELECT COUNT(*) FROM expenses WHERE user_id = ? {date_clause}", params)
+    transaction_count = cursor.fetchone()[0]
+
+    # Top category
+    cursor.execute(f"""
+        SELECT category, SUM(amount) as total
+        FROM expenses
+        WHERE user_id = ? {date_clause}
+        GROUP BY category
+        ORDER BY total DESC
+        LIMIT 1
+    """, params)
+    top_category_row = cursor.fetchone()
+    top_category = top_category_row["category"] if top_category_row else "N/A"
+
+    return {
+        "total_spent": total_spent,
+        "transaction_count": transaction_count,
+        "top_category": top_category
+    }
+
+
+def get_recent_transactions(cursor, user_id, limit=5, date_from=None, date_to=None):
+    """Fetch recent transactions with optional date filter."""
+    date_clause = ""
+    params = [user_id]
+    if date_from and date_to:
+        date_clause = "AND date >= ? AND date <= ?"
+        params = [user_id, date_from, date_to]
+    elif date_from:
+        date_clause = "AND date >= ?"
+        params = [user_id, date_from]
+    elif date_to:
+        date_clause = "AND date <= ?"
+        params = [user_id, date_to]
+
+    cursor.execute(f"""
+        SELECT id, date, description, category, amount
+        FROM expenses
+        WHERE user_id = ? {date_clause}
+        ORDER BY date DESC
+        LIMIT {limit}
+    """, params)
+    rows = cursor.fetchall()
+
+    return [
+        {
+            "date": row["date"],
+            "description": row["description"],
+            "category": row["category"],
+            "amount": row["amount"]
+        }
+        for row in rows
+    ]
+
+
+def get_category_breakdown(cursor, user_id, date_from=None, date_to=None):
+    """Fetch category breakdown with percentages and optional date filter."""
+    date_clause = ""
+    params = [user_id]
+    if date_from and date_to:
+        date_clause = "AND date >= ? AND date <= ?"
+        params = [user_id, date_from, date_to]
+    elif date_from:
+        date_clause = "AND date >= ?"
+        params = [user_id, date_from]
+    elif date_to:
+        date_clause = "AND date <= ?"
+        params = [user_id, date_to]
+
+    # First get total for percentage calculation
+    cursor.execute(f"""
+        SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? {date_clause}
+    """, params)
+    total_spent = cursor.fetchone()[0]
+
+    # Get category amounts
+    cursor.execute(f"""
+        SELECT category, SUM(amount) as amount
+        FROM expenses
+        WHERE user_id = ? {date_clause}
+        GROUP BY category
+        ORDER BY amount DESC
+    """, params)
+    category_rows = cursor.fetchall()
+
+    categories = []
+    if total_spent > 0:
+        for row in category_rows:
+            percentage = round((row["amount"] / total_spent) * 100)
+            categories.append({
+                "name": row["category"],
+                "amount": row["amount"],
+                "percentage": percentage
+            })
+
+    return categories
+
+
 @app.route("/profile")
 def profile():
     # Require authentication
@@ -143,15 +276,33 @@ def profile():
 
     user_id = session["user_id"]
 
-    # Get date filter parameters from query string
-    start_date = request.args.get("start_date", "").strip()
-    end_date = request.args.get("end_date", "").strip()
+    # Get and validate date filter parameters from query string
+    date_from = parse_date(request.args.get("date_from", ""))
+    date_to = parse_date(request.args.get("date_to", ""))
 
-    # Handle invalid date range: swap if start > end
-    date_filter_error = None
-    if start_date and end_date and start_date > end_date:
-        date_filter_error = "Start date cannot be after end date. Dates have been swapped."
-        start_date, end_date = end_date, start_date
+    # Handle invalid date range: flash error and fall back to no filter
+    if date_from and date_to and date_from > date_to:
+        flash("Start date must be before end date.", "error")
+        date_from = None
+        date_to = None
+
+    # Compute preset dates for quick-select buttons
+    today = datetime.now().strftime("%Y-%m-%d")
+    this_month_start = datetime.now().replace(day=1).strftime("%Y-%m-%d")
+
+    three_months_ago = (datetime.now() - timedelta(days=90)).strftime("%Y-%m-%d")
+    six_months_ago = (datetime.now() - timedelta(days=180)).strftime("%Y-%m-%d")
+
+    # Determine active preset for UI highlighting
+    active_preset = None
+    if date_from == this_month_start and date_to == today:
+        active_preset = "this_month"
+    elif date_from == three_months_ago and date_to == today:
+        active_preset = "last_3_months"
+    elif date_from == six_months_ago and date_to == today:
+        active_preset = "last_6_months"
+    elif not date_from and not date_to:
+        active_preset = "all_time"
 
     conn = get_db()
     cursor = conn.cursor()
@@ -165,88 +316,12 @@ def profile():
         "member_since": user_row["created_at"][:10] if user_row else "Unknown"
     }
 
-    # Build date filter clause and parameters
-    date_clause = ""
-    date_params = [user_id]
-    if start_date and end_date:
-        date_clause = "AND date >= ? AND date <= ?"
-        date_params = [user_id, start_date, end_date]
-    elif start_date:
-        date_clause = "AND date >= ?"
-        date_params = [user_id, start_date]
-    elif end_date:
-        date_clause = "AND date <= ?"
-        date_params = [user_id, end_date]
+    # Fetch data using helper functions
+    stats = get_summary_stats(cursor, user_id, date_from, date_to)
+    transactions = get_recent_transactions(cursor, user_id, limit=5, date_from=date_from, date_to=date_to)
+    categories = get_category_breakdown(cursor, user_id, date_from, date_to)
 
-    # Total spent (with optional date filter)
-    cursor.execute(f"SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? {date_clause}", date_params)
-    total_spent = cursor.fetchone()[0]
-
-    # Transaction count (with optional date filter)
-    cursor.execute(f"SELECT COUNT(*) FROM expenses WHERE user_id = ? {date_clause}", date_params)
-    transaction_count = cursor.fetchone()[0]
-
-    # Top category (with optional date filter)
-    cursor.execute(f"""
-        SELECT category, SUM(amount) as total
-        FROM expenses
-        WHERE user_id = ? {date_clause}
-        GROUP BY category
-        ORDER BY total DESC
-        LIMIT 1
-    """, date_params)
-    top_category_row = cursor.fetchone()
-    top_category = top_category_row["category"] if top_category_row else "N/A"
-
-    # Category breakdown with percentages (with optional date filter)
-    cursor.execute(f"""
-        SELECT category, SUM(amount) as amount
-        FROM expenses
-        WHERE user_id = ? {date_clause}
-        GROUP BY category
-        ORDER BY amount DESC
-    """, date_params)
-    category_rows = cursor.fetchall()
-
-    # Build categories list with percentages
-    categories = []
-    if total_spent > 0:
-        for row in category_rows:
-            percentage = round((row["amount"] / total_spent) * 100)
-            categories.append({
-                "name": row["category"],
-                "amount": row["amount"],
-                "percentage": percentage
-            })
-
-    # Fetch recent transactions (with optional date filter)
-    cursor.execute(
-        f"""SELECT id, date, description, category, amount
-           FROM expenses
-           WHERE user_id = ? {date_clause}
-           ORDER BY date DESC
-           LIMIT 5""",
-        date_params
-    )
-    rows = cursor.fetchall()
     conn.close()
-
-    # Convert rows to list of dicts
-    transactions = [
-        {
-            "date": row["date"],
-            "description": row["description"],
-            "category": row["category"],
-            "amount": row["amount"]
-        }
-        for row in rows
-    ]
-
-    stats = {
-        "total_spent": total_spent,
-        "transaction_count": transaction_count,
-        "top_category": top_category
-    }
 
     return render_template(
         "profile.html",
@@ -254,9 +329,13 @@ def profile():
         stats=stats,
         transactions=transactions,
         categories=categories,
-        start_date=start_date,
-        end_date=end_date,
-        date_filter_error=date_filter_error
+        date_from=date_from or "",
+        date_to=date_to or "",
+        active_preset=active_preset,
+        this_month_start=this_month_start,
+        three_months_ago=three_months_ago,
+        six_months_ago=six_months_ago,
+        today=today
     )
 
 
