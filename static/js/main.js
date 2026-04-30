@@ -30,4 +30,37 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
     }
+
+    // Date filter validation for profile page
+    const dateFilterForm = document.querySelector('.date-filter-form');
+
+    if (dateFilterForm) {
+        const startDateInput = dateFilterForm.querySelector('input[name="start_date"]');
+        const endDateInput = dateFilterForm.querySelector('input[name="end_date"]');
+
+        // Validate date range on change
+        function validateDateRange() {
+            if (startDateInput.value && endDateInput.value) {
+                if (startDateInput.value > endDateInput.value) {
+                    endDateInput.setCustomValidity("End date must be after start date");
+                } else {
+                    endDateInput.setCustomValidity("");
+                }
+            } else {
+                endDateInput.setCustomValidity("");
+            }
+        }
+
+        startDateInput.addEventListener("change", validateDateRange);
+        endDateInput.addEventListener("change", validateDateRange);
+
+        // Prevent form submission if date range is invalid
+        dateFilterForm.addEventListener("submit", function(e) {
+            if (startDateInput.value && endDateInput.value && startDateInput.value > endDateInput.value) {
+                e.preventDefault();
+                endDateInput.setCustomValidity("End date must be after start date");
+                endDateInput.reportValidity();
+            }
+        });
+    }
 });

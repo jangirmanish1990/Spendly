@@ -142,6 +142,17 @@ def profile():
         return redirect(url_for("login"))
 
     user_id = session["user_id"]
+
+    # Get date filter parameters from query string
+    start_date = request.args.get("start_date", "").strip()
+    end_date = request.args.get("end_date", "").strip()
+
+    # Handle invalid date range: swap if start > end
+    date_filter_error = None
+    if start_date and end_date and start_date > end_date:
+        date_filter_error = "Start date cannot be after end date. Dates have been swapped."
+        start_date, end_date = end_date, start_date
+
     conn = get_db()
     cursor = conn.cursor()
 
@@ -154,34 +165,47 @@ def profile():
         "member_since": user_row["created_at"][:10] if user_row else "Unknown"
     }
 
-    # Total spent
-    cursor.execute("SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ?", (user_id,))
+    # Build date filter clause and parameters
+    date_clause = ""
+    date_params = [user_id]
+    if start_date and end_date:
+        date_clause = "AND date >= ? AND date <= ?"
+        date_params = [user_id, start_date, end_date]
+    elif start_date:
+        date_clause = "AND date >= ?"
+        date_params = [user_id, start_date]
+    elif end_date:
+        date_clause = "AND date <= ?"
+        date_params = [user_id, end_date]
+
+    # Total spent (with optional date filter)
+    cursor.execute(f"SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? {date_clause}", date_params)
     total_spent = cursor.fetchone()[0]
 
-    # Transaction count
-    cursor.execute("SELECT COUNT(*) FROM expenses WHERE user_id = ?", (user_id,))
+    # Transaction count (with optional date filter)
+    cursor.execute(f"SELECT COUNT(*) FROM expenses WHERE user_id = ? {date_clause}", date_params)
     transaction_count = cursor.fetchone()[0]
 
-    # Top category
-    cursor.execute("""
+    # Top category (with optional date filter)
+    cursor.execute(f"""
         SELECT category, SUM(amount) as total
         FROM expenses
-        WHERE user_id = ?
+        WHERE user_id = ? {date_clause}
         GROUP BY category
         ORDER BY total DESC
         LIMIT 1
-    """, (user_id,))
+    """, date_params)
     top_category_row = cursor.fetchone()
     top_category = top_category_row["category"] if top_category_row else "N/A"
 
-    # Category breakdown with percentages
-    cursor.execute("""
+    # Category breakdown with percentages (with optional date filter)
+    cursor.execute(f"""
         SELECT category, SUM(amount) as amount
         FROM expenses
-        WHERE user_id = ?
+        WHERE user_id = ? {date_clause}
         GROUP BY category
         ORDER BY amount DESC
-    """, (user_id,))
+    """, date_params)
     category_rows = cursor.fetchall()
 
     # Build categories list with percentages
@@ -195,14 +219,14 @@ def profile():
                 "percentage": percentage
             })
 
-    # Fetch recent transactions
+    # Fetch recent transactions (with optional date filter)
     cursor.execute(
-        """SELECT id, date, description, category, amount
+        f"""SELECT id, date, description, category, amount
            FROM expenses
-           WHERE user_id = ?
+           WHERE user_id = ? {date_clause}
            ORDER BY date DESC
            LIMIT 5""",
-        (user_id,)
+        date_params
     )
     rows = cursor.fetchall()
     conn.close()
@@ -224,7 +248,16 @@ def profile():
         "top_category": top_category
     }
 
-    return render_template("profile.html", user=user, stats=stats, transactions=transactions, categories=categories)
+    return render_template(
+        "profile.html",
+        user=user,
+        stats=stats,
+        transactions=transactions,
+        categories=categories,
+        start_date=start_date,
+        end_date=end_date,
+        date_filter_error=date_filter_error
+    )
 
 
 @app.route("/expenses/add")
