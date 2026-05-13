@@ -80,6 +80,7 @@
                     <th>Description</th>
                     <th>Category</th>
                     <th>Amount</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -89,6 +90,9 @@
                     <td>{{ txn.description }}</td>
                     <td><span class="badge badge-{{ txn.category|lower }}">{{ txn.category }}</span></td>
                     <td class="amount">₹{{ "%.2f"|format(txn.amount) }}</td>
+                    <td class="table-actions">
+                        <a href="{{ url_for('edit_expense', id=txn.id) }}" class="btn-ghost btn-sm">Edit</a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

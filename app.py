@@ -245,6 +245,7 @@ def get_recent_transactions(cursor, user_id, limit=5, date_from=None, date_to=No
 
     return [
         {
+            "id": row["id"],
             "date": row["date"],
             "description": row["description"],
             "category": row["category"],
