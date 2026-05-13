@@ -17,7 +17,21 @@
       "Bash(git merge *)",
       "Bash(git stash *)",
       "Bash(curl *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "PowerShell(Get-Content *)",
+      "Bash(claude mcp *)",
+      "Bash(npx *)",
+      "PowerShell(npm *)",
+      "mcp__plugin_figma_figma__get_design_context",
+      "mcp__plugin_figma_figma__whoami",
+      "PowerShell(Get-Command *)",
+      "Bash(python3 -c ' *)",
+      "PowerShell(winget *)",
+      "PowerShell(Test-Path *)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "sqlite"
+  ],
+  "enableAllProjectMcpServers": true
 }

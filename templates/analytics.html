@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics — Spendly{% endblock %}
+
+{% block content %}
+<div class="coming-soon-section">
+    <div class="coming-soon-inner">
+
+        <div class="coming-soon-badge">Coming Soon</div>
+
+        <h1 class="coming-soon-title">Analytics</h1>
+        <p class="coming-soon-subtitle">
+            Powerful insights into your spending habits are on the way.
+            We're building charts, trends, and breakdowns to help you
+            understand exactly where your money goes.
+        </p>
+
+        <div class="coming-soon-features">
+            <div class="cs-feature-card">
+                <div class="cs-feature-icon">◎</div>
+                <h3 class="cs-feature-title">Spending Trends</h3>
+                <p class="cs-feature-body">Visualise your spending over time with interactive monthly and weekly charts.</p>
+            </div>
+            <div class="cs-feature-card">
+                <div class="cs-feature-icon">◈</div>
+                <h3 class="cs-feature-title">Category Breakdown</h3>
+                <p class="cs-feature-body">See exactly how much you spend per category with donut charts and percentages.</p>
+            </div>
+            <div class="cs-feature-card">
+                <div class="cs-feature-icon">◉</div>
+                <h3 class="cs-feature-title">Budget Insights</h3>
+                <p class="cs-feature-body">Compare actual spend against your budget and get alerts when you're close to limits.</p>
+            </div>
+        </div>
+
+        <div class="coming-soon-actions">
+            <a href="{{ url_for('profile') }}" class="btn-primary">Back to Profile</a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
