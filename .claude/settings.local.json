@@ -27,11 +27,13 @@
       "PowerShell(Get-Command *)",
       "Bash(python3 -c ' *)",
       "PowerShell(winget *)",
-      "PowerShell(Test-Path *)"
+      "PowerShell(Test-Path *)",
+      "Bash(git branch *)",
+      "Bash(git push *)"
     ]
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "sqlite"
-  ],
-  "enableAllProjectMcpServers": true
+  ]
 }
