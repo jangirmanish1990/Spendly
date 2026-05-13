@@ -53,6 +53,31 @@ def init_db():
     conn.close()
 
 
+def get_expense_by_id(expense_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, user_id, amount, category, date, description FROM expenses WHERE id = ?",
+        (expense_id,),
+    )
+    row = cursor.fetchone()
+    conn.close()
+    if row is None:
+        return None
+    return dict(row)
+
+
+def update_expense(expense_id, amount, category, date, description):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE expenses SET amount=?, category=?, date=?, description=? WHERE id=?",
+        (amount, category, date, description, expense_id),
+    )
+    conn.commit()
+    conn.close()
+
+
 def add_expense(user_id, amount, category, date, description):
     conn = get_db()
     cursor = conn.cursor()

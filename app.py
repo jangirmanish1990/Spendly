@@ -1,9 +1,25 @@
 import os
 from datetime import datetime, timedelta
 
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    session,
+    abort,
+)
 from werkzeug.security import generate_password_hash
-from database.db import get_db, init_db, seed_db, add_expense as add_expense_db
+from database.db import (
+    get_db,
+    init_db,
+    seed_db,
+    add_expense as add_expense_db,
+    get_expense_by_id,
+    update_expense,
+)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "spendly-secret-key-change-in-production")
@@ -440,9 +456,65 @@ def add_expense():
     )
 
 
-@app.route("/expenses/<int:id>/edit")
+@app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
 def edit_expense(id):
-    return "Edit expense — coming in Step 8"
+    if not session.get("user_id"):
+        flash("Please log in to edit an expense.", "error")
+        return redirect(url_for("login"))
+
+    expense = get_expense_by_id(id)
+    if expense is None:
+        abort(404)
+    if expense["user_id"] != session["user_id"]:
+        abort(403)
+
+    if request.method == "POST":
+        amount_str = request.form.get("amount", "").strip()
+        category = request.form.get("category", "").strip()
+        date_str = request.form.get("date", "").strip()
+        description = request.form.get("description", "").strip() or None
+
+        errors = []
+        try:
+            amount = float(amount_str)
+            if amount <= 0:
+                errors.append("Amount must be greater than zero.")
+        except ValueError:
+            amount = amount_str
+            errors.append("Amount must be a valid number.")
+
+        if category not in ALLOWED_CATEGORIES:
+            errors.append("Please select a valid category.")
+
+        try:
+            datetime.strptime(date_str, "%Y-%m-%d")
+        except ValueError:
+            errors.append("Date must be a valid date (YYYY-MM-DD).")
+
+        if errors:
+            for e in errors:
+                flash(e, "error")
+            return render_template(
+                "edit_expense.html",
+                expense={
+                    "id": id,
+                    "amount": amount_str,
+                    "category": category,
+                    "date": date_str,
+                    "description": description or "",
+                },
+                categories=sorted(ALLOWED_CATEGORIES),
+            )
+
+        update_expense(id, amount, category, date_str, description)
+        flash("Expense updated successfully.", "success")
+        return redirect(url_for("profile"))
+
+    return render_template(
+        "edit_expense.html",
+        expense=expense,
+        categories=sorted(ALLOWED_CATEGORIES),
+    )
 
 
 @app.route("/expenses/<int:id>/delete")
