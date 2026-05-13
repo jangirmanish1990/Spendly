@@ -78,6 +78,14 @@ def update_expense(expense_id, amount, category, date, description):
     conn.close()
 
 
+def delete_expense(expense_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))
+    conn.commit()
+    conn.close()
+
+
 def add_expense(user_id, amount, category, date, description):
     conn = get_db()
     cursor = conn.cursor()
