@@ -717,6 +717,22 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ------------------------------------------------------------------ */
+/* Section header — title + action button row                         */
+/* ------------------------------------------------------------------ */
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.section-header .section-title { margin-bottom: 0; }
+
+.transactions-table .table-actions { text-align: right; }
+.btn-sm { padding: 0.25rem 0.65rem; font-size: 0.8rem; }
+
+/* ------------------------------------------------------------------ */
 /* Terms Page                                                          */
 /* ------------------------------------------------------------------ */
 
