@@ -53,6 +53,17 @@ def init_db():
     conn.close()
 
 
+def add_expense(user_id, amount, category, date, description):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO expenses (user_id, amount, category, date, description) VALUES (?, ?, ?, ?, ?)",
+        (user_id, amount, category, date, description),
+    )
+    conn.commit()
+    conn.close()
+
+
 def seed_db():
     """
     Inserts demo user and sample expenses.
@@ -71,7 +82,7 @@ def seed_db():
     demo_password_hash = generate_password_hash("demo123")
     cursor.execute(
         "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
-        ("Demo User", "demo@spendly.com", demo_password_hash)
+        ("Demo User", "demo@spendly.com", demo_password_hash),
     )
 
     # Get the demo user's id
@@ -93,7 +104,7 @@ def seed_db():
     for amount, category, date, description in sample_expenses:
         cursor.execute(
             "INSERT INTO expenses (user_id, amount, category, date, description) VALUES (?, ?, ?, ?, ?)",
-            (demo_user_id, amount, category, date, description)
+            (demo_user_id, amount, category, date, description),
         )
 
     conn.commit()

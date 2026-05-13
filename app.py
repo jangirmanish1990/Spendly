@@ -3,15 +3,26 @@ from datetime import datetime, timedelta
 
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash
-from database.db import get_db, init_db, seed_db
+from database.db import get_db, init_db, seed_db, add_expense as add_expense_db
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "spendly-secret-key-change-in-production")
+
+ALLOWED_CATEGORIES = {
+    "Food",
+    "Transport",
+    "Bills",
+    "Health",
+    "Entertainment",
+    "Shopping",
+    "Other",
+}
 
 
 # ------------------------------------------------------------------ #
 # Routes                                                              #
 # ------------------------------------------------------------------ #
+
 
 @app.route("/")
 def landing():
@@ -38,7 +49,9 @@ def register():
 
         if len(password) < 8:
             flash("Password must be at least 8 characters.", "error")
-            return render_template("register.html", error="Password must be at least 8 characters.")
+            return render_template(
+                "register.html", error="Password must be at least 8 characters."
+            )
 
         if password != confirm_password:
             flash("Passwords do not match.", "error")
@@ -59,7 +72,7 @@ def register():
         password_hash = generate_password_hash(password)
         cursor.execute(
             "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
-            (name, email, password_hash)
+            (name, email, password_hash),
         )
         conn.commit()
         conn.close()
@@ -85,12 +98,16 @@ def login():
         # Validation
         if not email or not password:
             flash("Email and password are required.", "error")
-            return render_template("login.html", error="Email and password are required.")
+            return render_template(
+                "login.html", error="Email and password are required."
+            )
 
         # Look up user by email
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name, password_hash FROM users WHERE email = ?", (email,))
+        cursor.execute(
+            "SELECT id, name, password_hash FROM users WHERE email = ?", (email,)
+        )
         user = cursor.fetchone()
         conn.close()
 
@@ -100,6 +117,7 @@ def login():
             return render_template("login.html", error="Invalid email or password.")
 
         from werkzeug.security import check_password_hash
+
         if not check_password_hash(user["password_hash"], password):
             flash("Invalid email or password.", "error")
             return render_template("login.html", error="Invalid email or password.")
@@ -128,6 +146,7 @@ def privacy():
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
+
 
 @app.route("/logout")
 def logout():
@@ -164,29 +183,37 @@ def get_summary_stats(cursor, user_id, date_from=None, date_to=None):
         params = [user_id, date_to]
 
     # Total spent
-    cursor.execute(f"SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? {date_clause}", params)
+    cursor.execute(
+        f"SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? {date_clause}",
+        params,
+    )
     total_spent = cursor.fetchone()[0]
 
     # Transaction count
-    cursor.execute(f"SELECT COUNT(*) FROM expenses WHERE user_id = ? {date_clause}", params)
+    cursor.execute(
+        f"SELECT COUNT(*) FROM expenses WHERE user_id = ? {date_clause}", params
+    )
     transaction_count = cursor.fetchone()[0]
 
     # Top category
-    cursor.execute(f"""
+    cursor.execute(
+        f"""
         SELECT category, SUM(amount) as total
         FROM expenses
         WHERE user_id = ? {date_clause}
         GROUP BY category
         ORDER BY total DESC
         LIMIT 1
-    """, params)
+    """,
+        params,
+    )
     top_category_row = cursor.fetchone()
     top_category = top_category_row["category"] if top_category_row else "N/A"
 
     return {
         "total_spent": total_spent,
         "transaction_count": transaction_count,
-        "top_category": top_category
+        "top_category": top_category,
     }
 
 
@@ -204,13 +231,16 @@ def get_recent_transactions(cursor, user_id, limit=5, date_from=None, date_to=No
         date_clause = "AND date <= ?"
         params = [user_id, date_to]
 
-    cursor.execute(f"""
+    cursor.execute(
+        f"""
         SELECT id, date, description, category, amount
         FROM expenses
         WHERE user_id = ? {date_clause}
         ORDER BY date DESC
         LIMIT {limit}
-    """, params)
+    """,
+        params,
+    )
     rows = cursor.fetchall()
 
     return [
@@ -218,7 +248,7 @@ def get_recent_transactions(cursor, user_id, limit=5, date_from=None, date_to=No
             "date": row["date"],
             "description": row["description"],
             "category": row["category"],
-            "amount": row["amount"]
+            "amount": row["amount"],
         }
         for row in rows
     ]
@@ -239,30 +269,38 @@ def get_category_breakdown(cursor, user_id, date_from=None, date_to=None):
         params = [user_id, date_to]
 
     # First get total for percentage calculation
-    cursor.execute(f"""
+    cursor.execute(
+        f"""
         SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE user_id = ? {date_clause}
-    """, params)
+    """,
+        params,
+    )
     total_spent = cursor.fetchone()[0]
 
     # Get category amounts
-    cursor.execute(f"""
+    cursor.execute(
+        f"""
         SELECT category, SUM(amount) as amount
         FROM expenses
         WHERE user_id = ? {date_clause}
         GROUP BY category
         ORDER BY amount DESC
-    """, params)
+    """,
+        params,
+    )
     category_rows = cursor.fetchall()
 
     categories = []
     if total_spent > 0:
         for row in category_rows:
             percentage = round((row["amount"] / total_spent) * 100)
-            categories.append({
-                "name": row["category"],
-                "amount": row["amount"],
-                "percentage": percentage
-            })
+            categories.append(
+                {
+                    "name": row["category"],
+                    "amount": row["amount"],
+                    "percentage": percentage,
+                }
+            )
 
     return categories
 
@@ -308,17 +346,21 @@ def profile():
     cursor = conn.cursor()
 
     # Fetch user data
-    cursor.execute("SELECT id, name, email, created_at FROM users WHERE id = ?", (user_id,))
+    cursor.execute(
+        "SELECT id, name, email, created_at FROM users WHERE id = ?", (user_id,)
+    )
     user_row = cursor.fetchone()
     user = {
         "name": user_row["name"],
         "email": user_row["email"],
-        "member_since": user_row["created_at"][:10] if user_row else "Unknown"
+        "member_since": user_row["created_at"][:10] if user_row else "Unknown",
     }
 
     # Fetch data using helper functions
     stats = get_summary_stats(cursor, user_id, date_from, date_to)
-    transactions = get_recent_transactions(cursor, user_id, limit=5, date_from=date_from, date_to=date_to)
+    transactions = get_recent_transactions(
+        cursor, user_id, limit=5, date_from=date_from, date_to=date_to
+    )
     categories = get_category_breakdown(cursor, user_id, date_from, date_to)
 
     conn.close()
@@ -335,13 +377,66 @@ def profile():
         this_month_start=this_month_start,
         three_months_ago=three_months_ago,
         six_months_ago=six_months_ago,
-        today=today
+        today=today,
     )
 
 
-@app.route("/expenses/add")
+@app.route("/expenses/add", methods=["GET", "POST"])
 def add_expense():
-    return "Add expense — coming in Step 7"
+    if not session.get("user_id"):
+        flash("Please log in to add an expense.", "error")
+        return redirect(url_for("login"))
+
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    if request.method == "POST":
+        amount_str = request.form.get("amount", "").strip()
+        category = request.form.get("category", "").strip()
+        date_str = request.form.get("date", "").strip()
+        description = request.form.get("description", "").strip() or None
+
+        errors = []
+        try:
+            amount = float(amount_str)
+            if amount <= 0:
+                errors.append("Amount must be greater than zero.")
+        except ValueError:
+            amount = amount_str
+            errors.append("Amount must be a valid number.")
+
+        if category not in ALLOWED_CATEGORIES:
+            errors.append("Please select a valid category.")
+
+        try:
+            datetime.strptime(date_str, "%Y-%m-%d")
+        except ValueError:
+            errors.append("Date must be a valid date (YYYY-MM-DD).")
+
+        if errors:
+            for e in errors:
+                flash(e, "error")
+            return render_template(
+                "add_expense.html",
+                expense={
+                    "amount": amount_str,
+                    "category": category,
+                    "date": date_str,
+                    "description": description or "",
+                },
+                categories=sorted(ALLOWED_CATEGORIES),
+                today=today,
+            )
+
+        add_expense_db(session["user_id"], amount, category, date_str, description)
+        flash("Expense added successfully.", "success")
+        return redirect(url_for("profile"))
+
+    return render_template(
+        "add_expense.html",
+        expense={"amount": "", "category": "", "date": today, "description": ""},
+        categories=sorted(ALLOWED_CATEGORIES),
+        today=today,
+    )
 
 
 @app.route("/expenses/<int:id>/edit")

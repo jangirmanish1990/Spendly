@@ -69,7 +69,10 @@
 
     <!-- Section 3: Transaction History -->
     <div class="profile-card">
-        <h2 class="section-title">Transaction History</h2>
+        <div class="section-header">
+            <h2 class="section-title">Transaction History</h2>
+            <a href="{{ url_for('add_expense') }}" class="btn-primary">+ Add Expense</a>
+        </div>
         <table class="transactions-table">
             <thead>
                 <tr>
